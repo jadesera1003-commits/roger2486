@@ -1,51 +1,68 @@
-# ⚔️ Ragnarok Online Equipment Simulator (v2.4)
+# ⚔️ RO 專業裝備模擬器 (RO Equipment Simulator)
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-success?style=for-the-badge)](https://jadesera1003-commits.github.io/roger2486/)
+[![Version](https://img.shields.io/badge/Version-2.4-blue.svg)](#)
+[![Status](https://img.shields.io/badge/Status-Active-success.svg)](#)
 
-A lightweight, front-end only web calculator for Ragnarok Online. 
-[ 繁體中文 (TwRO) ](#-twro-裝備模擬器) | [ English (iRO) ](#-iro-equipment-simulator) | [ 한국어 (kRO) ](#-kro-장비-시뮬레이터)
+> 專為《仙境傳說 Ragnarok Online》打造的輕量化網頁版裝備計算機。無須安裝後端環境、純前端運算，點開網頁即可即時檢視面板數值。
 
----
-
-## 🇹🇼 TwRO 裝備模擬器
-
-這是一個純前端寫的 RO 裝備計算機，主要用來計算 EP19 之後的裝備加成。不需要安裝任何環境或連線資料庫，點開網頁就能直接算。
-
-### 📌 核心功能
-* **純靜態網頁**：無後端依賴，掛在 GitHub Pages 上讀取速度極快。
-* **精煉與階級計算**：內建 +9 ~ +12 的精煉能力計算，以及 D 階級 ~ A 階級的能力解鎖判斷。
-* **套裝效果 (Set Bonus)**：自動判斷組合，例如雪花套、冰晶飾品套，甚至包含「黯淡三件套」這種吃精煉總和的複雜加成，都會自動算進面板。
-* **實時面板**：右側面板即時更新，點選裝備直接看 ATK、MATK、延遲 (Delay)、固詠 (FCT)、變詠 (VCT) 等總和。
-
-### 🛠️ 如何自行擴充裝備？
-資料全部寫死在 `index.html` 的 `itemDB` 物件裡面。如果你想自己加新裝備（例如未來的 EP20 裝備），只要照著現有的 JSON 格式，把裝備 ID、能力值丟進去就能直接動了。
+👉 **[點我開啟 RO 裝備模擬器 (Live Demo)](https://jadesera1003-commits.github.io/roger2486/)**
 
 ---
 
-## 🇺🇸 iRO Equipment Simulator
+## 🌟 系統特色
 
-A lightweight, browser-based equipment calculator for Ragnarok Online (focused on EP19+ gear). No backend required.
-
-### 📌 Features
-* **Zero Setup**: Runs entirely in the browser using HTML/JS. 
-* **Refine & Grade System**: Automatically calculates stat bonuses for Refine levels (+9 to +12) and Equipment Grades (D to A).
-* **Smart Set Bonuses**: Automatically applies combo effects (e.g., Snow set, Ice accessories, Dim Ice combo based on total refine levels).
-* **Real-time Stat Panel**: Instantly updates ATK, MATK, VCT, FCT, Skill Delay, and other key combat stats as you change gear.
-
-### 🛠️ How to Add New Items
-All equipment data is stored in the `itemDB` object inside `index.html`. You can easily fork this repo and add new gear using the existing JSON structure.
+* **極致輕量**：採用 HTML + 原生 JavaScript 開發，運算邏輯全在本地瀏覽器執行，零延遲。
+* **動態數值面板**：切換裝備的瞬間，右側面板即時結算 ATK、MATK、延遲、固詠等關鍵戰鬥數值。
+* **深度機制支援**：
+  * 完整對應 **精煉 (+9 ~ +12)** 與 **裝備階級 (Grade D ~ A)** 系統。
+  * 內建智能 **套裝判定 (Set Bonus)**（如：雪花套、冰晶飾品對）。
+  * 支援特殊動態加成（如：黯淡三件套依「精煉總和」計算額外數值）。
 
 ---
 
-## 🇰🇷 kRO 장비 시뮬레이터
+## 🚀 未來開發藍圖 (Roadmap)
 
-라그나로크 온라인(EP19 이후) 장비 세팅을 위한 가벼운 웹 시뮬레이터입니다. 데이터베이스나 백엔드 없이 브라우저에서 바로 실행됩니다.
+這裡記錄了專案未來的擴充方向，將視開發進度陸續實裝：
 
-### 📌 주요 기능
-* **웹 기반 (No 설치)**: 순수 프론트엔드로 제작되어 로딩이 빠릅니다.
-* **제련 및 등급 시스템**: +9 ~ +12 제련도 및 D ~ A 등급(Grade) 옵션을 완벽히 계산합니다.
-* **세트 옵션 자동 적용**: 설화(Snow) 세트, 글레시어(Ice) 액세서리, 희미한 글레시어(Dim Ice) 세트(제련도 합산) 효과가 자동으로 반영됩니다.
-* **실시간 스탯 확인**: 장비를 변경할 때마다 ATK, MATK, 고캐(FCT), 변캐(VCT), 스후딜(Skill Delay) 등 총합 스탯을 즉시 확인할 수 있습니다.
+- [x] **v2.0+**：建立核心計算引擎與 UI 介面。
+- [x] **v2.4**：實裝 EP19 雪花、冰晶、黯淡系列裝備與階級邏輯。
+- [ ] **v3.0**：整合「角色基礎素質 (Status Calculator)」系統，將人物 STR/AGI/VIT 等配點納入總面板計算。
+- [ ] **v3.x**：擴充卡片 (Card) 與附魔 (Enchant) 插槽系統。
+- [ ] **v4.0**：實裝各職業主流技能的傷害公式試算。
 
-### 🛠️ 장비 데이터 추가 방법
-모든 장비 데이터는 `index.html` 파일 내 `itemDB`에 저장되어 있습니다. JSON 형식에 맞춰 새로운 장비를 쉽게 추가하거나 수정할 수 있습니다.
+---
+
+## 📝 版本紀錄 (Changelog)
+
+維持專案的更新透明度，最新版本請見最上方：
+
+* **[v2.4] - 2026-03**
+  * 新增：黯淡冰晶系列裝備。
+  * 更新：優化 `checkSetBonuses` 邏輯，修復套裝效果判定。
+  * 調整：UI 介面升級，新增獨立的總計加成能力面板。
+
+* **[v2.0] - 早期版本**
+  * 建立基礎裝備選擇器與精煉下拉選單。
+  * 導入雪花與冰晶系列基礎資料。
+
+---
+
+## 🛠️ 開發者指南：如何擴充資料庫？
+
+本專案將所有的裝備資料結構化並統一管理於 `index.html` 中的 `itemDB` 物件。
+若需新增裝備（如未來的 EP20），只需依照以下 JSON 格式新增物件，系統將自動套用計算邏輯，無須修改核心程式碼：
+
+```javascript
+// 擴充範例格式
+{ 
+    id: 'item_id', 
+    name: '裝備名稱', 
+    series: '系列標籤', 
+    base: { atk: 100, mhp_p: 10 }, // 基礎能力
+    refine_rules: [{ interval: 2, stats: { atk: 15 } }], // 規律性精煉加成
+    milestones: { 7: { aspd_p: 10 }, 9: { p_atk: 2 } }, // 特定精煉門檻加成
+    grades: { // 階級加成
+        D: { base: { pow: 3 } }, 
+        C: { base: { atk_p: 3 } } 
+    } 
+}
