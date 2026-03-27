@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RO 專業模擬器 - v2.4 完全體</title>
+    <style>
+        :root {
+            --primary: #4f46e5; --bg: #f1f5f9; --card-bg: #ffffff;
+            --text-main: #0f172a; --text-sub: #475569; --border: #cbd5e1;
+        }
+        body { background: var(--bg); font-family: system-ui, sans-serif; color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 1000px; }
+        .main-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; margin-top: 10px; }
+        
+        .card { background: var(--card-bg); border-radius: 12px; padding: 16px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 12px; }
+        .slot-label { font-size: 0.75rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-bottom: 8px; display: block; border-left: 4px solid var(--primary); padding-left: 10px; }
+        
+        .ctrl-group { display: flex; gap: 8px; margin-top: 10px; }
+        select { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.9rem; background-color: #f8fafc; cursor: pointer; transition: 0.2s; }
+        select:disabled { background-color: #e2e8f0; cursor: not-allowed; color: #94a3b8; }
+
+        .status-panel { background: #1e293b; color: #fff; border-radius: 16px; padding: 25px; position: sticky; top: 15px; height: fit-content; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
+        .status-panel h3 { margin: 0 0 15px; font-size: 1.2rem; color: #38bdf8; border-bottom: 2px solid #334155; padding-bottom: 12px; text-align: center; }
+        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; font-family: 'Consolas', monospace; }
+        .stat-label { color: #94a3b8; font-size: 0.9rem; }
+        .stat-val { color: #f1f5f9; font-weight: bold; font-size: 1rem; }
+        
+        .set-badge { background: #0f172a; color: #38bdf8; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 8px; display: block; border: 1px solid #38bdf8; line-height: 1.4; }
+
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .status-panel { position: static; order: -1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header style="text-align:center; margin-bottom: 20px;">
+        <h2 style="margin:0">RO 裝備模擬器 <span style="color:var(--primary)">v2.4 完全體</span></h2>
+        <p style="font-size:0.9rem; color:var(--text-sub)">全方位檢查完成 | 精煉與階級邏輯鎖定</p>
+    </header>
+
+    <div class="main-layout">
+        <div class="equip-grid" id="equip-container"></div>
+        <div class="status-panel">
+            <h3>📊 總計加成能力</h3>
+            <div id="stat-result"></div>
+            <div style="margin-top:25px; border-top:2px solid #334155; padding-top:15px;">
+                <div style="font-size:0.85rem; color:#38bdf8; margin-bottom:12px; font-weight:800">✨ 啟動套裝效果</div>
+                <div id="active-sets"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- [ 1. 完整資料庫導入 ] ---
+const itemDB = {
+    armor: [
+        { id: 'snow_armor', name: '雪花鎧甲', series: 'snow', base: { atk: 130 }, refine_rules: [{ interval: 2, stats: { atk: 15 } }], milestones: { 7: { aspd_p: 15 }, 9: { p_atk: 2 } } },
+        { id: 'snow_robe', name: '雪花外袍', series: 'snow', base: { matk: 130 }, refine_rules: [{ interval: 2, stats: { matk: 15 } }], milestones: { 7: { cast_p: 15 }, 9: { s_matk: 2 } } },
+        { id: 'ice_armor', name: '冰晶鎧甲', series: 'ice', base: { atk: 120 }, refine_rules: [{ interval: 2, stats: { atk: 15, def: 15 } }], milestones: { 7: { dist_p: 5, aspd_p: 10 }, 9: { p_atk: 3, aspd_p: 5 }, 10: { def: 100, delay_p: 5 } }, grades: { D: { base: { pow: 3, con: 3, delay_p: 5 } }, C: { base: { atk_p: 3, p_atk: 2 } } } },
+        { id: 'ice_robe', name: '冰晶外袍', series: 'ice', base: { matk: 120 }, refine_rules: [{ interval: 2, stats: { matk: 15, def: 15 } }], milestones: { 7: { elem_p: 5, cast_p: 10 }, 9: { s_matk: 3, cast_p: 5 }, 10: { def: 100, delay_p: 5 } }, grades: { D: { base: { spl: 3, con: 3, delay_p: 5 } }, C: { base: { matk_p: 3, s_matk: 2 } } } },
+        { id: 'dim_ice_armor', name: '黯淡冰晶鎧甲', series: 'dim', base: { atk: 140 }, refine_rules: [{ interval: 2, stats: { pow: 1, con: 1 } }], milestones: { 7: { atk_p: 3, p_atk: 2 }, 9: { delay_p: 5, cast_p: 5 }, 11: { dist_p: 10 } }, grades: { D: { base: { atk_p: 5, pow: 5, con: 5 } }, C: { base: { dist_p: 10 } }, B: { base: { atk_p: 1 } }, A: { base: { atk_p: 2 } } } },
+        { id: 'dim_ice_robe', name: '黯淡冰晶外袍', series: 'dim', base: { matk: 140 }, refine_rules: [{ interval: 2, stats: { spl: 1, con: 1 } }], milestones: { 7: { matk_p: 3, s_matk: 2 }, 9: { delay_p: 5, cast_p: 5 }, 11: { elem_p: 10 } }, grades: { D: { base: { matk_p: 5, spl: 5, con: 5 } }, C: { base: { elem_p: 10 } }, B: { base: { matk_p: 1 } }, A: { base: { matk_p: 2 } } } }
+    ],
+    garment: [
+        { id: 'snow_cloak', name: '雪花斗篷', series: 'snow', base: { mhp: 2500, msp: 500 }, refine_rules: [{ interval: 2, stats: { mhp: 200, msp: 50 } }], milestones: { 7: { aspd_p: 7 }, 9: { pow: 3 } } },
+        { id: 'snow_scarf', name: '雪花圍巾', series: 'snow', base: { mhp: 2000, msp: 1000 }, refine_rules: [{ interval: 2, stats: { mhp: 150, msp: 100 } }], milestones: { 7: { cast_p: 7 }, 9: { spl: 3 } } },
+        { id: 'ice_cloak', name: '冰晶斗篷', series: 'ice', base: { mhp: 2500, msp: 500 }, refine_rules: [{ interval: 2, stats: { mhp: 200, msp: 50 } }], milestones: { 7: { aspd_p: 7 }, 9: { pow: 3 }, 10: { cast_p: 5 } }, grades: { D: { base: { atk_p: 3, p_atk: 2 } }, C: { base: { cast_p: 10 } } } },
+        { id: 'ice_scarf', name: '冰晶圍巾', series: 'ice', base: { mhp: 2000, msp: 1000 }, refine_rules: [{ interval: 2, stats: { mhp: 150, msp: 100 } }], milestones: { 7: { cast_p: 7 }, 9: { spl: 3 }, 10: { aspd_p: 5 } }, grades: { D: { base: { matk_p: 3, s_matk: 2 } }, C: { base: { aspd_p: 10 } } } },
+        { id: 'dim_ice_cloak', name: '黯淡冰晶斗篷', series: 'dim', base: { pow: 1, con: 1 }, milestones: { 7: { cast_p: 10 }, 9: { dist_p: 10 }, 11: { delay_p: 10 } }, grades: { D: { base: { atk_p: 3, pow: 5, con: 5 } }, C: { base: { p_atk: 2, dist_p: 5 } }, B: { base: { p_atk: 1 } }, A: { base: { atk_p: 2 } } } },
+        { id: 'dim_ice_scarf', name: '黯淡冰晶圍巾', series: 'dim', base: { spl: 1, con: 1 }, milestones: { 7: { cast_p: 10 }, 9: { elem_p: 10 }, 11: { delay_p: 10 } }, grades: { D: { base: { matk_p: 3, spl: 5, con: 5 } }, C: { base: { s_matk: 2, elem_p: 5 } }, B: { base: { s_matk: 1 } }, A: { base: { matk_p: 2 } } } }
+    ],
+    shoes: [
+        { id: 'snow_war_boots', name: '雪花戰靴', series: 'snow', base: { mhp_p: 8, msp_p: 4 }, refine_rules: [{ interval: 2, stats: { msp_p: 1 } }], milestones: { 7: { dist_p: 7 }, 9: { p_atk: 2 } } },
+        { id: 'snow_boots', name: '雪花長靴', series: 'snow', base: { mhp_p: 6, msp_p: 6 }, refine_rules: [{ interval: 2, stats: { msp_p: 1 } }], milestones: { 7: { elem_p: 7 }, 9: { s_matk: 2 } } },
+        { id: 'ice_war_boots', name: '冰晶戰靴', series: 'ice', base: { mhp_p: 8, msp_p: 4 }, refine_rules: [{ interval: 2, stats: { msp_p: 1, def: 15 } }], milestones: { 7: { dist_p: 7 }, 9: { p_atk: 3 }, 10: { def: 100, aspd_p: 7 } }, grades: { D: { base: { res: 25, mres: 25 } }, C: { base: { p_atk: 2, pow: 2, con: 2 } } } },
+        { id: 'ice_boots', name: '冰晶長靴', series: 'ice', base: { mhp_p: 6, msp_p: 6 }, refine_rules: [{ interval: 2, stats: { msp_p: 1, def: 15 } }], milestones: { 7: { elem_p: 7 }, 9: { s_matk: 3 }, 10: { def: 100, cast_p: 7 } }, grades: { D: { base: { res: 25, mres: 25 } }, C: { base: { s_matk: 2, spl: 2, con: 2 } } } },
+        { id: 'dim_ice_war_boots', name: '黯淡冰晶戰靴', series: 'dim', base: { pow: 2, con: 2 }, milestones: { 7: { atk_p: 5, p_atk: 2 }, 9: { cast_p: 10 }, 11: { dist_p: 10 } }, grades: { D: { base: { atk_p: 2 } }, C: { base: { fcast: -1 } }, B: { base: { p_atk: 2, atk_p: 1 } }, A: { base: { atk_p: 2 } } } },
+        { id: 'dim_ice_boots', name: '黯淡冰晶長靴', series: 'dim', base: { spl: 2, con: 2 }, milestones: { 7: { matk_p: 5, s_matk: 2 }, 9: { cast_p: 10 }, 11: { elem_p: 10 } }, grades: { D: { base: { matk_p: 2 } }, C: { base: { fcast: -1 } }, B: { base: { s_matk: 2, matk_p: 1 } }, A: { base: { matk_p: 2 } } } }
+    ],
+    acc_l: [
+        { id: 'snow_ring', name: '雪花戒指 (左)', series: 'snow', base: { atk_p: 7, msp_p: 7 } },
+        { id: 'snow_earring', name: '雪花耳環 (左)', series: 'snow', base: { matk_p: 7, msp_p: 7 } },
+        { id: 'ice_ring', name: '冰晶戒指 (左)', series: 'ice', base: { atk_p: 8, msp_p: 7 } },
+        { id: 'ice_earring', name: '冰晶耳環 (左)', series: 'ice', base: { matk_p: 8, msp_p: 7 } }
+    ],
+    acc_r: [
+        { id: 'snow_pendant', name: '雪花墜子 (右)', series: 'snow', base: { atk_p: 7, mhp_p: 7 } },
+        { id: 'snow_necklace', name: '雪花項鍊 (右)', series: 'snow', base: { matk_p: 7, mhp_p: 7 } },
+        { id: 'ice_pendant', name: '冰晶墜子 (右)', series: 'ice', base: { atk_p: 8, mhp_p: 7 } },
+        { id: 'ice_necklace', name: '冰晶項鍊 (右)', series: 'ice', base: { matk_p: 8, mhp_p: 7 } }
+    ]
+};
+
+const slots = [{ id: 'armor', name: '身體鎧甲' }, { id: 'garment', name: '披肩部位' }, { id: 'shoes', name: '鞋子部位' }, { id: 'acc_r', name: '飾品(右)' }, { id: 'acc_l', name: '飾品(左)' }];
+
+// --- [ 2. 計算引擎 ] ---
+function calculateItemStats(item, refine, currentGrade) {
+    let total = {};
+    const add = (obj) => { if (obj) for (let [k, v] of Object.entries(obj)) total[k] = (total[k] || 0) + v; };
+    if (item.base) add(item.base);
+    if (item.refine_rules) {
+        item.refine_rules.forEach(r => {
+            const times = Math.floor(refine / r.interval);
+            if (times > 0) for (let [k, v] of Object.entries(r.stats)) total[k] = (total[k] || 0) + (v * times);
+        });
+    }
+    if (item.milestones) for (let [lv, stats] of Object.entries(item.milestones)) if (refine >= parseInt(lv)) add(stats);
+    if (currentGrade && item.grades) {
+        for (let g of ['D', 'C', 'B', 'A']) {
+            if (item.grades[g]) add(item.grades[g].base);
+            if (g === currentGrade) break;
+        }
+    }
+    return total;
+}
+
+// --- [ 3. 套裝與數值判定 (修復版) ] ---
+function checkSetBonuses(eq) {
+    let bonus = {}, names = [];
+    const add = (obj, n) => { 
+        for (let [k, v] of Object.entries(obj)) bonus[k] = (bonus[k] || 0) + v; 
+        names.push(n); 
+    };
+
+    // 雪花連動
+    if (eq.armor.id === 'snow_armor' && eq.garment.id === 'snow_cloak') add({ atk: 50 }, "[雪花鎧甲] + [雪花斗篷]：ATK+50");
+    if (eq.armor.id === 'snow_robe' && eq.garment.id === 'snow_scarf') add({ matk: 50 }, "[雪花外袍] + [雪花圍巾]：MATK+50");
+
+    // 冰晶系列
+    if (eq.armor.id === 'ice_armor' && eq.garment.id === 'ice_cloak') add({ atk: 50 }, "[冰晶鎧甲] + [冰晶斗篷]：ATK+50");
+    if (eq.acc_l.id === 'ice_ring' && eq.acc_r.id === 'ice_pendant') {
+        add({ def: 50 }, "[冰晶戒指] + [冰晶墜子]：DEF+50");
+        if (eq.armor.id === 'ice_armor') add({ fcast: -0.3, atk_p: 5 }, "[冰晶飾品對] + [冰晶鎧甲]：固詠-0.3s, ATK+5%");
+        if (eq.garment.id === 'ice_cloak') add({ dist_p: 15 }, "[冰晶飾品對] + [冰晶斗篷]：近遠傷+15%");
+    }
+
+    // 黯淡系列 (精煉總和)
+    if (eq.armor.series === 'dim' && eq.garment.series === 'dim' && eq.shoes.series === 'dim') {
+        const sum = (eq.armor.refine || 0) + (eq.garment.refine || 0) + (eq.shoes.refine || 0);
+        if (eq.armor.id === 'dim_ice_armor') add({ atk: sum * 2 }, `[黯淡三件套]：精煉總和(${sum})*2 ATK+${sum*2}`);
+        if (eq.armor.id === 'dim_ice_robe') add({ matk: sum * 2 }, `[黯淡三件套]：精煉總和(${sum})*2 MATK+${sum*2}`);
+    }
+
+    return { bonus, names };
+}
+
+// --- [ 4. 介面控制邏輯 ] ---
+function init() {
+    const container = document.getElementById('equip-container');
+    slots.forEach(s => {
+        const isAcc = s.id.startsWith('acc');
+        container.innerHTML += `
+            <div class="card">
+                <span class="slot-label">${s.name}</span>
+                <select id="select-${s.id}" onchange="handleEquipChange('${s.id}')">
+                    <option value="">-- 未裝備 --</option>
+                    ${itemDB[s.id].map(i => `<option value="${i.id}">${i.name}</option>`).join('')}
+                </select>
+                ${!isAcc ? `
+                <div class="ctrl-group">
+                    <select id="refine-${s.id}" onchange="handleRefineChange('${s.id}')" disabled>
+                        <option value="">選擇精煉</option>
+                        ${[9,10,11,12].map(v => `<option value="${v}">+${v}</option>`).join('')}
+                    </select>
+                    <select id="grade-${s.id}" onchange="update()" disabled>
+                        <option value="">階級: 無</option>
+                    </select>
+                </div>` : ''}
+            </div>`;
+    });
+    update();
+}
+
+// 當裝備改變：解鎖/鎖定精煉
+function handleEquipChange(sid) {
+    const select = document.getElementById(`select-${sid}`);
+    const refSel = document.getElementById(`refine-${sid}`);
+    const gSel = document.getElementById(`grade-${sid}`);
+    
+    if (refSel) {
+        if (select.value === "") {
+            refSel.disabled = true;
+            refSel.value = "";
+            if (gSel) { gSel.disabled = true; gSel.innerHTML = '<option value="">階級: 無</option>'; }
+        } else {
+            refSel.disabled = false;
+        }
+    }
+    updateUI(sid); // 更新階級選單
+}
+
+// 當精煉改變：解鎖/鎖定階級
+function handleRefineChange(sid) {
+    const refSel = document.getElementById(`refine-${sid}`);
+    const gSel = document.getElementById(`grade-${sid}`);
+    const item = itemDB[sid].find(i => i.id === document.getElementById(`select-${sid}`).value);
+
+    if (gSel) {
+        if (refSel.value === "" || !item || !item.grades) {
+            gSel.disabled = true;
+            gSel.value = "";
+        } else {
+            gSel.disabled = false;
+        }
+    }
+    update();
+}
+
+function updateUI(sid) {
+    const item = itemDB[sid].find(i => i.id === document.getElementById(`select-${sid}`).value);
+    const gSel = document.getElementById(`grade-${sid}`);
+    if (gSel && item && item.grades) {
+        gSel.innerHTML = '<option value="">階級: 無</option>';
+        Object.keys(item.grades).forEach(g => gSel.innerHTML += `<option value="${g}">${g}級</option>`);
+    }
+    update();
+}
+
+function update() {
+    let total = {}, eqState = {};
+    slots.forEach(s => {
+        const id = document.getElementById(`select-${s.id}`).value;
+        const ref = parseInt(document.getElementById(`refine-${s.id}`)?.value || 0);
+        const gra = document.getElementById(`grade-${s.id}`)?.value || null;
+        const item = itemDB[s.id].find(i => i.id === id);
+        eqState[s.id] = { id, refine: ref, grade: gra, series: item?.series };
+        if (item) {
+            const stats = calculateItemStats(item, ref, gra);
+            for (let [k, v] of Object.entries(stats)) total[k] = (total[k] || 0) + v;
+        }
+    });
+    const setRes = checkSetBonuses(eqState);
+    for (let [k, v] of Object.entries(setRes.bonus)) total[k] = (total[k] || 0) + v;
+    render(total, setRes.names);
+}
+
+function render(total, sets) {
+    const labels = { atk:'ATK', atk_p:'ATK%', matk:'MATK', matk_p:'MATK%', mhp:'MHP', mhp_p:'MHP%', msp:'MSP', msp_p:'MSP%', def:'DEF加成', pow:'POW', con:'CON', spl:'SPL', vit:'VIT', p_atk:'P.ATK', dist_p:'近遠傷%', cast_p:'變詠-%', delay_p:'延遲-%', aspd_p:'ASPD-%', fcast:'固詠', res:'RES', mres:'MRES' };
+    let html = '';
+    Object.keys(labels).forEach(k => {
+        if (total[k]) {
+            let val = total[k] > 0 ? `+${total[k]}` : total[k];
+            let unit = (k.endsWith('_p') || ['dist_p','cast_p','delay_p','aspd_p'].includes(k)) ? '%' : '';
+            if (k === 'fcast') { val = `${total[k]}s`; unit = ''; }
+            html += `<div class="stat-row"><span class="stat-label">${labels[k]}</span><span class="stat-val">${val}${unit}</span></div>`;
+        }
+    });
+    document.getElementById('stat-result').innerHTML = html || '<p style="text-align:center; color:#94a3b8">請先選擇裝備</p>';
+    document.getElementById('active-sets').innerHTML = sets.length ? sets.map(n => `<span class="set-badge">${n}</span>`).join('') : '<span style="color:#64748b; font-size:0.75rem">尚未觸發套裝效果</span>';
+}
+init();
+</script>
+</body>
+</html>
